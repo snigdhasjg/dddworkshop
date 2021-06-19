@@ -1,47 +1,51 @@
 package com.thoughtworks.ddd.domain;
 
+import com.thoughtworks.ddd.domain.event.CartEvent;
+import com.thoughtworks.ddd.domain.event.CartCheckoutEvent;
+import com.thoughtworks.ddd.domain.event.CartDeleteItemEvent;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Cart {
+    @EqualsAndHashCode.Include
     private final Long id;
+    private State state;
+    @Getter
     private final List<Item> items;
-    private final List<CartOperation> cartOperations;
+    @Getter
+    private final List<CartEvent> cartEvents;
 
     public Cart(Long id) {
         this.items = new ArrayList<>();
-        this.cartOperations = new ArrayList<>();
+        this.cartEvents = new ArrayList<>();
         this.id = id;
+        this.state = State.UNCHECKED;
     }
 
     public void removeItem(Item item) {
+        CartEvent cartEvent = new CartDeleteItemEvent(item);
+        cartEvents.add(cartEvent);
         items.remove(item);
-        cartOperations.add(CartOperation.deleteOperation(item));
     }
 
-    void addItem(Item item) {
+    public void addItem(Item item) {
         items.add(item);
     }
 
-    public List<Item> getItems() {
-        return items;
+    public Order checkOut() {
+        CartEvent cartEvent = new CartCheckoutEvent();
+        cartEvents.add(cartEvent);
+        this.state = State.CHECKED;
+        return new Order(items);
     }
 
-    public List<CartOperation> getCartOperations() {
-        return cartOperations;
+    enum State {
+        UNCHECKED,
+        CHECKED,
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Cart cart = (Cart) o;
-        return Objects.equals(id, cart.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
 }
